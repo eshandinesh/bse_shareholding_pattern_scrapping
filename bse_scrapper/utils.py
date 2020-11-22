@@ -147,8 +147,8 @@ def add_details_in_headers_with_noentries():
         else:
             i = i + 1
     header_list = []
-    for i in range(df.shape[0]):
-        if df.loc[i, 'Category'] in df.loc[i, 'Category of shareholder']:
+    for j in range(df.shape[0]):
+        if df.loc[j, 'Category'] == df.loc[j, 'Category of shareholder']:
             header_list.append(1)
         else:
             header_list.append(0)
@@ -157,6 +157,17 @@ def add_details_in_headers_with_noentries():
     df = df.drop(index)
     df = df[df.columns.values[2:]]
     df.to_csv('updated_final.csv', index=False)
+
+
+def merge_base_shareholding_patterns(path):
+    list = []
+    os.chdir(path)
+    for f in os.listdir(path):
+        list.append(pd.read_csv(f))
+    os.chdir(os.path.normpath(os.getcwd() + os.sep + os.pardir))
+
+    frame = pd.concat(list, axis=0, ignore_index=True)
+    frame.to_csv('base_shareholding_pattern.csv')
 
 
 def browser_profile():

@@ -4,6 +4,7 @@ import requests
 import pandas as pd
 
 from utils import *
+from constants import *
 
 
 def scrapping_jobs(quarter_link, driver, scrip_code, scrip_name):
@@ -19,14 +20,19 @@ def scrapping_jobs(quarter_link, driver, scrip_code, scrip_name):
     r = requests.get(driver.current_url, headers=header)
     dfs = pd.read_html(r.text)
     time.sleep(get_random_wait(initial_limit=2, upper_limit=5))
-    temp_df = dfs[4][[0, 1, 3]]
+    temp_df = dfs[4]
     temp_df.columns = temp_df.iloc[0]
     temp_df = temp_df.iloc[3:-1]
+    temp_df = temp_df[['Category of shareholder', 'No. of shareholders', 'Total no. shares held',
+             'Shareholding as a % of total no. of shares (calculated as per SCRR, 1957)As a % of (A+B+C2)']]
+
     temp_df.insert(loc=0, column='Scrip_code', value=[scrip_code]*temp_df.shape[0])
     temp_df.insert(loc=1, column='Company', value=[scrip_name]*temp_df.shape[0])
     temp_df.insert(loc=2, column='Quarter', value=[str(dfs[2][3][1]).split(':')[-1]]*temp_df.shape[0])
+    os.chdir(base_shareholding_pattern_dir_path)
     temp_df.to_csv('shareholding_pattern_{}_{}.csv'.format(scrip_name, str(dfs[2][3][1]).split(':')[-1]), index=False)
     time.sleep(get_random_wait(initial_limit=2, upper_limit=5))
+    os.chdir(os.path.normpath(os.getcwd() + os.sep + os.pardir))
     driver.execute_script("window.scrollTo(0, 1000);")
     time.sleep(get_random_wait(initial_limit=2, upper_limit=5))
 
@@ -138,17 +144,25 @@ if __name__ == '__main__':
     dfs[4].to_csv('main_page_table.csv', index=False)
     time.sleep(get_random_wait(initial_limit=4, upper_limit=8))
 
-    scrips = ['INFOSYS LTD']
-    codes = ['500209']
+    # scrips = ['INFOSYS LTD']
+    # codes = ['500209']
 
     # scrips = ['CAMLIN FINE SCIENCES LTD', 'AARTI DRUGS LTD', 'APOLLO HOSPITALS ENTERPRISE LTD',
     #           'RELIANCE INDUSTRIES LTD', 'STATE BANK OF INDIA']
     # codes = ['532834', '524348', '508869', '500325', '500112']
 
+    scrips = SCRIP_NAME
+    codes = SCRIP_CODE
+
     pre_final_dir = 'pre_final'
+    base_shareholding_pattern = 'base_shareholding_pattern'
     pre_final_dir_path = os.path.join(os.getcwd(), pre_final_dir)
+    base_shareholding_pattern_dir_path = os.path.join(os.getcwd(), base_shareholding_pattern)
     if not os.path.exists(pre_final_dir_path):
         os.makedirs(pre_final_dir_path)
+
+    if not os.path.exists(base_shareholding_pattern_dir_path):
+        os.makedirs(base_shareholding_pattern_dir_path)
 
     for scrip_name, scrip_code in zip(scrips, codes):
         # scrip_name = "APOLLO HOSPITALS ENTERPRISE LTD"
@@ -168,7 +182,7 @@ if __name__ == '__main__':
         time.sleep(get_random_wait(initial_limit=2, upper_limit=5))
         input_security.click()
         time.sleep(get_random_wait(initial_limit=2, upper_limit=5))
-        input_security.send_keys(scrip_name)
+        input_security.send_keys(scrip_code)
         time.sleep(get_random_wait(initial_limit=2, upper_limit=5))
         select_security = driver.find_element_by_xpath('//div[@id="ajax_response_smart"]/ul/li')
         time.sleep(get_random_wait(initial_limit=2, upper_limit=5))
@@ -219,3 +233,4 @@ if __name__ == '__main__':
     frame = pd.concat(list, axis=0, ignore_index=True)
     frame.to_csv('final.csv')
     add_details_in_headers_with_noentries()
+    merge_base_shareholding_patterns(base_shareholding_pattern_dir_path)
